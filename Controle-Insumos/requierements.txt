@@ -1,0 +1,9 @@
+Flask
+flask_sqlalchemy
+datetime
+SQLAlchemy
+jsonify
+pytz
+pandas
+openpyxl
+pdfplumber
