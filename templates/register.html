@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Registo - Controle de Insumos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+    <div class="w-full max-w-md">
+        <form method="POST" action="{{ url_for('register') }}" class="bg-white shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
+            <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">Criar Nova Conta</h1>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="p-4 mb-4 text-sm text-yellow-700 bg-yellow-100 rounded-lg" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="username">Nome de Utilizador</label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" id="username" name="username" type="text" required>
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="password">Palavra-passe</label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" id="password" name="password" type="password" required>
+            </div>
+            <div class="flex items-center justify-between">
+                <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" type="submit">
+                    Registar
+                </button>
+                <a class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800" href="{{ url_for('login') }}">
+                    Já tem uma conta?
+                </a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

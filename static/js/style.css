@@ -1,0 +1,105 @@
+/* static/css/style.css */
+
+/* 1. Variáveis de Cor (Paleta) */
+/* Isso facilita a troca de cores no futuro. */
+:root {
+    --cor-fundo: #F5F1EB;         /* Cinza bem claro para o fundo */
+    --cor-sidebar: #264FEC;      /* Azul escuro para a barra lateral */
+    --cor-sidebar-texto: #ffffff;   /* Texto branco na sidebar */
+    --cor-sidebar-hover: #264FEC;  /* Azul mais claro para o hover na sidebar */
+    --cor-card: #ffffff;            /* Branco para os cards */
+    --cor-texto-principal: #343a40; /* Cinza escuro para textos */
+    --cor-texto-secundario: #6c757d;/* Cinza mais claro para sub-textos */
+    --cor-borda: #dee2e6;          /* Cinza para bordas */
+    --cor-sombra: rgba(0, 0, 0, 0.05); /* Sombra suave */
+    --cor-primaria-accent: #007bff; /* Azul para botões e links principais */
+}
+
+/* 2. Estilos Gerais e Layout Principal */
+body {
+    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+    background-color: var(--cor-fundo);
+    color: var(--cor-texto-principal);
+    margin: 0;
+    display: flex; /* Habilita o layout flex para a sidebar */
+}
+
+.container-fluid {
+    padding: 0;
+}
+
+/* 3. Estilos da Barra Lateral (Sidebar) */
+.sidebar {
+    width: 260px;
+    background-color: var(--cor-sidebar);
+    color: var(--cor-sidebar-texto);
+    height: 100vh; /* Altura total da tela */
+    position: sticky; /* Fica fixa ao rolar */
+    top: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.sidebar .nav-link {
+    color: var(--cor-sidebar-texto);
+    padding: 12px 15px;
+    margin-bottom: 5px;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+}
+
+.sidebar .nav-link:hover {
+    background-color: var(--cor-sidebar-hover);
+}
+
+/* 4. Estilos do Conteúdo Principal */
+.main-content {
+    flex-grow: 1; /* Ocupa o resto do espaço */
+    padding: 30px;
+    overflow-y: auto; /* Permite rolagem se o conteúdo for grande */
+}
+
+/* 5. Customização de Componentes (Cards, Tabelas, etc.) */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px var(--cor-sombra);
+    background-color: var(--cor-card);
+    padding: 25px;
+    margin-bottom: 25px;
+}
+
+.table {
+    background-color: var(--cor-card);
+}
+
+.table thead th {
+    border-bottom: 2px solid var(--cor-borda);
+    color: var(--cor-texto-principal);
+    font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--cor-fundo);
+}
+
+.btn-primary {
+    background-color: var(--cor-primaria-accent);
+    border-color: var(--cor-primaria-accent);
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 500;
+}
+
+/* Ajuste para mensagens flash */
+.alert {
+    border-radius: 8px;
+}

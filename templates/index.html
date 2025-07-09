@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Insumos</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar .nav-item.active { background-color: #2563eb; color: white; border-radius: 8px; }
+        .sidebar .nav-item.active a { color: white; }
+        .form-header { background-color: #3b82f6; color: white; }
+        .modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
+        .detalhe-label { font-size: 0.75rem; font-weight: 500; color: #6b7280; display: block; }
+        .detalhe-valor { font-size: 1rem; color: #1f2937; }
+        .select2-container--default .select2-selection--single { height: 2.5rem !important; border: 1px solid #d1d5db !important; border-radius: 0.375rem !important; }
+        .select2-container--default .select2-selection--single .select2-selection__arrow { height: 2.5rem !important; }
+        .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 2.5rem !important; padding-left: 0.75rem !important;}
+        .select2-container .select2-selection--single .select2-selection__rendered { padding-right: 20px !important; }
+    </style>
+
+<body class="bg-gray-100 flex">
+
+    <aside class="sidebar w-64 bg-gray-800 text-white h-screen sticky top-0 flex flex-col p-4">
+        <a href="#" id="logo-link" class="transition-opacity hover:opacity-80">
+            <h3 class="text-2xl font-bold mb-8 text-center">
+                <i class="fa-solid fa-box-open text-center"></i> Controle dos Insumos
+            </h3>
+        </a>
+
+        <nav>
+            <ul>
+                <li class="nav-item mb-2" data-page="dashboard"><a href="#" class="flex items-center p-2 rounded-lg hover:bg-gray-700">Dashboard</a></li>
+                <li class="nav-item mb-2" data-page="estoque"><a href="#" class="flex items-center p-2 rounded-lg hover:bg-gray-700">Estoque</a></li>
+                <li class="nav-item mb-2" data-page="transferencia"><a href="#" class="flex items-center p-2 rounded-lg hover:bg-gray-700">Transferência</a></li>
+                <li class="nav-item mb-2" data-page="fornecedores"><a href="#" class="flex items-center p-2 rounded-lg hover:bg-gray-700">Fornecedores</a></li>
+                <li class="nav-item mb-2" data-page="setores"><a href="#" class="flex items-center p-2 rounded-lg hover:bg-gray-700">Setores</a></li>
+                <li class="nav-item mb-2" data-page="recebimento"><a href="#" class="flex items-center p-2 rounded-lg hover:bg-gray-700">Recebimento</a></li>
+                <li class="nav-item mb-2" data-page="consulta-notas"><a href="#" class="flex items-center p-2 rounded-lg hover:bg-gray-700">Consulta de Notas</a></li>
+                <li class="nav-item mb-2" data-page="registro-compra"><a href="#" class="flex items-center p-2 rounded-lg hover:bg-gray-700">Registro de Compra</a></li>
+                <li class="nav-item mb-2" data-page="lista-compras"><a href="#" class="flex items-center p-2 rounded-lg hover:bg-gray-700">Ordens de Compra</a></li>
+                <li class="nav-item mb-2" data-page="inventario"><a href="#" class="flex items-center p-2 rounded-lg hover:bg-gray-700">Ajuste de Inventário</a></li>
+            </ul>
+            <div class="mt-auto p-2 text-center">
+                <p class="text-sm text-gray-400">Logado como:</p>
+                <p class="font-semibold">{{ username }}</p>
+                <a href="{{ url_for('logout') }}" class="mt-4 inline-block w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
+                    Sair
+                </a>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <div id="dashboard" class="page space-y-6">
+            <div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4"><i class="fa-solid fa-chart-simple mr-3"></i>Dashboard de Insumos</h2>
+                <p class="text-gray-500">Análise completa de consumos e estoque.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white p-5 rounded-lg shadow flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Total de Itens</p>
+                        <p id="kpi-total-itens" class="text-2xl font-bold text-gray-800">1.247</p>
+                        <p class="text-xs text-green-600">+1,2% vs. mês anterior</p>
+                    </div>
+                    <div class="bg-blue-100 text-blue-600 p-3 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Valor Total</p>
+                        <p id="kpi-valor-total" class="text-2xl font-bold text-gray-800">R$ 847.320</p>
+                        <p class="text-xs text-red-600">-0,5% vs. mês anterior</p>
+                    </div>
+                    <div class="bg-blue-100 text-blue-600 p-3 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01" /></svg>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Consumo Diário</p>
+                        <p id="kpi-consumo-diario" class="text-2xl font-bold text-gray-800">R$ 28.244</p>
+                        <p class="text-xs text-green-600">+3,1% vs. média semanal</p>
+                    </div>
+                    <div class="bg-blue-100 text-blue-600 p-3 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-lg shadow flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Itens Críticos</p>
+                        <p id="kpi-itens-criticos" class="text-2xl font-bold text-red-600">23</p>
+                        <p class="text-xs text-gray-500">abaixo do estoque mínimo</p>
+                    </div>
+                    <div class="bg-red-100 text-red-600 p-3 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+                    <div>
+                        <label for="filtro-status" class="text-sm font-medium text-gray-700">Status</label>
+                        <select id="filtro-status" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            <option>Todos</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filtro-setor" class="text-sm font-medium text-gray-700">Setor</label>
+                        <select id="filtro-setor" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            <option>Todos</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filtro-periodo" class="text-sm font-medium text-gray-700">Período</label>
+                        <select id="filtro-periodo" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            <option value="30">Últimos 30 dias</option>
+                            <option value="60">Últimos 60 dias</option>
+                            <option value="90">Últimos 90 dias</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="filtro-busca" class="text-sm font-medium text-gray-700">Busca</label>
+                        <input type="text" id="filtro-busca" placeholder="Buscar por SKU ou descrição..." class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="p-4 border-b">
+                    <h2 class="text-lg font-semibold text-gray-800">Análise Detalhada por Item</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descrição</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estoque Atual</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Saída Média Diária</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dias de Estoque</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Consumo (Qtd)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Consumo (Valor)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboard-table-body" class="divide-y divide-gray-200">
+                            <tr><td colspan="7" class="text-center py-10 text-gray-500">Carregando dados...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="dashboard-pagination" class="p-4 border-t flex justify-end">
+                    </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-1 bg-white p-5 rounded-lg shadow">
+                    <h3 class="font-semibold text-gray-800 mb-4">Consumo por Setor (Últimos 30 dias)</h3>
+                    <div class="relative h-64"><canvas id="dashboard-setor-chart"></canvas></div>
+                </div>
+                <div class="lg:col-span-2 bg-white p-5 rounded-lg shadow">
+                    <h3 class="font-semibold text-gray-800 mb-4">Tendência de Consumo Diário</h3>
+                    <div class="relative h-80"><canvas id="dashboard-tendencia-chart"></canvas></div>
+                </div>
+            </div>            
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-semibold text-gray-800 mb-4">Resumo por Status de Estoque</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="border-l-4 border-blue-500 bg-blue-50 p-4 rounded">
+                        <p class="text-sm text-blue-800 font-semibold">Excelente</p>
+                        <p class="text-2xl font-bold text-blue-900" id="status-excelente">112</p>
+                        <p class="text-xs text-blue-700">> 60 dias de estoque</p>
+                    </div>
+                    <div class="border-l-4 border-green-500 bg-green-50 p-4 rounded">
+                        <p class="text-sm text-green-800 font-semibold">Bom</p>
+                        <p class="text-2xl font-bold text-green-900" id="status-bom">187</p>
+                        <p class="text-xs text-green-700">30 - 60 dias de estoque</p>
+                    </div>
+                    <div class="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded">
+                        <p class="text-sm text-yellow-800 font-semibold">Atenção</p>
+                        <p class="text-2xl font-bold text-yellow-900" id="status-atencao">325</p>
+                        <p class="text-xs text-yellow-700">1 - 30 dias de estoque</p>
+                    </div>
+                    <div class="border-l-4 border-red-500 bg-red-50 p-4 rounded">
+                        <p class="text-sm text-red-800 font-semibold">Crítico</p>
+                        <p class="text-2xl font-bold text-red-900" id="status-critico">23</p>
+                        <p class="text-xs text-red-700">Abaixo do mínimo / Zerado</p>
+                    </div>
+                </div>
+            </div>
+        </div>    
+
+        <div id="estoque" class="page hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4"><i class="fa-solid fa-warehouse mr-3"></i>Estoque</h2>
+            <div class="flex gap-2 mb-4">
+                <input id="filtro-insumo" type="text" placeholder="Filtrar por insumo ou SKU..." class="border rounded-md px-3 py-2 w-1/3">
+                <input id="filtro-posicao" type="text" placeholder="Filtrar por posição..." class="border rounded-md px-3 py-2 w-1/3">
+                <button id="btn-filtrar" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Filtrar</button>
+                <button id="btn-limpar-filtro" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">Limpar</button>
+                <button id="btn-exportar-excel" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 ml-auto">
+                    Exportar para Excel
+                </button>
+                
+
+                
+            </div>
+            
+            <div class="overflow-x-auto bg-white rounded-lg shadow">
+                <table class="min-w-full bg-white">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Posição</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantidade</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor Unit.</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor Total</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="estoque-table-body" class="divide-y divide-gray-200">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="transferencia" class="page hidden max-w-2xl mx-auto">
+            <form id="form-transferencia" class="bg-white rounded-lg shadow p-6 mt-4">
+                <div class="form-header rounded-t-lg px-6 py-4 mb-4 -mx-6 -mt-6">
+                    <h2 class="text-2xl font-bold text-white-800 mb-4"><i class="fa-solid fa-right-left mr-3"></i>Transferência de Insumos</h2>
+                    <p class="text-gray-100 text-sm">Movimentação interna ou saída para setores.</p>
+                </div>
+                <div class="mb-4">
+                    <label class="font-medium text-gray-700">Código do Insumo (SKU) *</label>
+                    <div class="flex">
+                        <input id="sku-insumo" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Digite o SKU do insumo" required>
+                        <button type="button" id="btn-buscar-insumo" class="bg-gray-200 hover:bg-gray-300 border px-4 rounded-r-md flex items-center justify-center ml-2">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="campos-expandidos" class="hidden space-y-4">
+                    <div class="mb-3">
+                        <label class="font-medium text-gray-700">Nome do Insumo</label>
+                        <input id="nome-insumo" type="text" class="w-full bg-gray-100 px-3 py-2 border rounded-md" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="font-medium text-gray-700">Posição de Origem *</label>
+                        <select id="posicao-atual" class="w-full px-3 py-2 border border-gray-300 rounded-md"></select>
+                    </div>
+                    <div class="flex gap-4 mb-3">
+                        <div class="flex-1">
+                            <label class="font-medium text-gray-700">Qtd. Disponível</label>
+                            <input id="qtd-disponivel" type="text" class="w-full bg-gray-100 px-3 py-2 border rounded-md" readonly>
+                        </div>
+                        <div class="flex-1">
+                            <label class="font-medium text-gray-700">Qtd. a Transferir *</label>
+                            <input id="qtd-transferir" type="number" class="w-full px-3 py-2 border border-gray-300 rounded-md" min="1" required>
+                            <small id="max-qtd" class="text-gray-500"></small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="font-medium text-gray-700">Destino *</label>
+                        <input id="destino-transferencia" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Ex: A-02-05 ou SETOR-PRODUCAO" required>
+                         <small class="text-gray-500">Para saída, inicie com "SETOR-".</small>
+                    </div>
+                    <div class="flex justify-between mt-6">
+                        <button type="button" id="btn-cancelar-transferencia" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg">Cancelar</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Realizar Transferência</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div id="fornecedores" class="page hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-truck mr-3"></i>Fornecedores</h2>
+                <button id="btn-novo-fornecedor" class="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 font-semibold">Novo Fornecedor</button>
+                <button id="btn-exportar-fornecedores" class="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 font-semibold flex items-center">
+                    <i class="fa-solid fa-file-excel mr-2"></i>Exportar
+                </button>
+            </div>
+            <div class="overflow-x-auto bg-white rounded-lg shadow">
+                 <table class="min-w-full bg-white">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Razão Social</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CNPJ</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fornecedores-table-body" class="divide-y divide-gray-200">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="fornecedor-form-page" class="page hidden">
+            <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+                <div class="border-b pb-4 mb-6">
+                    <h3 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-clipboard-list mr-3"></i>Cadastro de Fornecedor</h3>
+                    <p class="text-sm text-gray-500">Preencha os dados do fornecedor para cadastro no sistema</p>
+                </div>
+                
+                <form id="form-add-fornecedor" class="space-y-6">
+                    <fieldset class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <legend class="text-lg font-semibold text-gray-700 col-span-full">Informações Básicas</legend>
+                        <div>
+                            <label for="razao_social" class="block text-sm font-medium text-gray-700">Razão Social *</label>
+                            <input type="text" name="razao_social" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="telefone" class="block text-sm font-medium text-gray-700">Telefone *</label>
+                            <input type="text" name="telefone" placeholder="(00) 0000-0000" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="nome_fantasia" class="block text-sm font-medium text-gray-700">Nome Fantasia</label>
+                            <input type="text" name="nome_fantasia" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                         <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700">Email *</label>
+                            <input type="email" name="email" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="cnpj" class="block text-sm font-medium text-gray-700">CNPJ *</label>
+                            <input type="text" name="cnpj" placeholder="00.000.000/0000-00" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="website" class="block text-sm font-medium text-gray-700">Website</label>
+                            <input type="url" name="website" placeholder="https://www.exemplo.com.br" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="inscricao_estadual" class="block text-sm font-medium text-gray-700">Inscrição Estadual</label>
+                            <input type="text" name="inscricao_estadual" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="categoria" class="block text-sm font-medium text-gray-700">Categoria</label>
+                            <select name="categoria" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <option>Selecione uma categoria</option>
+                                <option>Matéria Prima</option>
+                                <option>Embalagens</option>
+                                <option>Serviços</option>
+                                <option>Outros</option>
+                            </select>
+                        </div>
+                    </fieldset>
+                    
+                    <fieldset class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                         <legend class="text-lg font-semibold text-gray-700 col-span-full">Endereço</p>
+                        <div class="md:col-span-1">
+                            <label for="cep" class="block text-sm font-medium text-gray-700">CEP *</label>
+                            <input type="text" name="cep" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="logradouro" class="block text-sm font-medium text-gray-700">Logradouro *</label>
+                            <input type="text" name="logradouro" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        </div>
+                        <div class="md:col-span-1">
+                            <label for="numero" class="block text-sm font-medium text-gray-700">Número *</label>
+                            <input type="text" name="numero" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        </div>
+                         <div class="md:col-span-2">
+                            <label for="bairro" class="block text-sm font-medium text-gray-700">Bairro *</label>
+                            <input type="text" name="bairro" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        </div>
+                        <div class="md:col-span-1">
+                            <label for="complemento" class="block text-sm font-medium text-gray-700">Complemento</label>
+                            <input type="text" name="complemento" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        </div>
+                        <div class="md:col-span-1">
+                            <label for="cidade" class="block text-sm font-medium text-gray-700">Cidade *</label>
+                            <input type="text" name="cidade" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        </div>
+                        <div class="md:col-span-1">
+                             <label for="estado" class="block text-sm font-medium text-gray-700">Estado *</label>
+                            <input type="text" name="estado" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <legend class="text-lg font-semibold text-gray-700 col-span-full">Contato Principal</p>
+                         <div>
+                            <label for="contato_principal_nome" class="block text-sm font-medium text-gray-700">Nome do Contato *</label>
+                            <input type="text" name="contato_principal_nome" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                         </div>
+                          <div>
+                            <label for="contato_principal_telefone" class="block text-sm font-medium text-gray-700">Telefone do Contato *</label>
+                            <input type="text" name="contato_principal_telefone" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                         </div>
+                          <div>
+                            <label for="contato_principal_cargo" class="block text-sm font-medium text-gray-700">Cargo</label>
+                            <input type="text" name="contato_principal_cargo" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                         </div>
+                         <div>
+                            <label for="contato_principal_email" class="block text-sm font-medium text-gray-700">Email do Contato</label>
+                            <input type="email" name="contato_principal_email" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                         </div>
+                    </fieldset>
+
+                     <div>
+                        <label for="observacoes" class="block text-lg font-semibold text-gray-700">Informações Adicionais</label>
+                        <textarea name="observacoes" rows="4" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></textarea>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox" name="ativo" id="fornecedor-ativo" value="true" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+                        <label for="fornecedor-ativo" class="ml-2 block text-sm text-gray-900">Fornecedor ativo</label>
+                    </div>
+
+                    <div class="flex justify-end gap-4 pt-4 border-t">
+                        <button type="button" id="btn-cancelar-form" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 font-semibold">Cancelar</button>
+                        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-semibold">Cadastrar Fornecedor</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="fornecedor-detail-page" class="page hidden">
+            </div>
+
+        <div id="setores" class="page hidden">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-location-dot mr-3"></i>Setores</h2>
+                <p class="text-gray-500">Visão geral dos setores</p>
+            </div>
+            <div id="setores-card-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                </div>
+        </div>
+
+        <div id="setor-detail-page" class="page hidden">
+            </div>
+
+        <div id="recebimento" class="page hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6"><i class="fa-solid fa-file"></i> Recebimento de Mercadorias</h2>
+
+            <form id="form-recebimento" class="bg-white p-6 rounded-lg shadow-lg">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div>
+                        <label for="select-fornecedor" class="block text-sm font-medium text-gray-700">Fornecedor *</label>
+                        <select id="select-fornecedor" name="fornecedor_id" class="w-full mt-1" required></select>
+                    </div>
+                    <div>
+                        <label for="numero_documento" class="block text-sm font-medium text-gray-700">Número do Documento *</label>
+                        <input type="text" name="numero_documento" id="numero_documento" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="data_recebimento" class="block text-sm font-medium text-gray-700">Data de Recebimento *</label>
+                        <input type="date" name="data_recebimento" id="data_recebimento" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+
+                <div class="border-t pt-6 mb-6">
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="pdf-upload-input" class="block text-sm font-medium text-gray-700">Importar Itens de PDF (Nota Fiscal)</label>
+                            <div class="mt-1 flex rounded-md shadow-sm">
+                                <input type="file" id="pdf-upload-input" accept="application/pdf" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-l-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                <button type="button" id="btn-extrair-pdf" class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700">Extrair Itens</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="select-insumo-recebimento" class="block text-sm font-medium text-gray-700">Adicionar Insumo Manualmente</label>
+                            <select id="select-insumo-recebimento" class="w-full mt-1" placeholder="Busque por nome ou SKU..."></select>
+                        </div>
+                     </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Descrição do Insumo</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 w-28">Qtd. Doc.</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 w-28">Qtd. Conf. *</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 w-32">Posição Dest. *</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-itens-recebimento" class="divide-y">
+                            </tbody>
+                    </table>
+                </div>
+
+                <div class="flex justify-between items-center mt-6 pt-6 border-t">
+                    <div class="flex gap-6 text-sm">
+                        <div><strong>Total de Itens:</strong> <span id="resumo-total-itens">0</span></div>
+                        <div><strong>Valor Conferido:</strong> <span id="resumo-valor-total" class="font-bold text-green-600">R$ 0,00</span></div>
+                    </div>
+                    <div>
+                        <button type="button" id="btn-limpar-recebimento" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">Limpar Tudo</button>
+                        <button type="button" id="btn-finalizar-conferencia" class="bg-green-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-700 ml-4">Finalizar Conferência e Receber</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div id="consulta-notas" class="page hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6"><i class="fa-solid fa-magnifying-glass-dollar"></i>Consulta de Notas Fiscais Recebidas</h2>
+            
+            <div class="bg-white p-4 rounded-lg shadow-md mb-6 flex items-center gap-4">
+                <label for="input-busca-nota" class="font-semibold">Número da Nota:</label>
+                <input type="text" id="input-busca-nota" placeholder="Digite o número do documento..." class="flex-grow border-gray-300 rounded-md shadow-sm">
+                <button id="btn-buscar-nota" class="bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-blue-700">Buscar</button>
+            </div>
+
+            <div id="resultado-consulta-container">
+                </div>
+        </div>
+
+        <div id="registro-compra" class="page hidden">
+            <form id="form-registro-compra">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4"><i class="fa-solid fa-cart-arrow-down"></i> Registro de Compra</h3>
+                        <p class="text-gray-500">Controle e monitoramento de insumos</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-lg space-y-8">
+                    <fieldset class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <legend class="text-lg font-semibold text-gray-700 col-span-full border-b pb-2 mb-2">Informações Básicas</legend>
+                        <div>
+                            <label for="numero_ordem" class="block text-sm font-medium">Número da Ordem *</label>
+                            <input type="text" name="numero_ordem" id="numero_ordem" required placeholder="Ex: OC-2025-0001" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        </div>
+                        <div>
+                            <label for="data_compra" class="block text-sm font-medium">Data da Compra *</label>
+                            <input type="date" name="data_compra" id="data_compra" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        </div>
+                        <div>
+                            <label for="data_entrega_prevista" class="block text-sm font-medium">Entrega Prevista</label>
+                            <input type="date" name="data_entrega_prevista" id="data_entrega_prevista" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        </div>
+                        <div>
+                            <label for="tipo_compra" class="block text-sm font-medium">Tipo de Compra</label>
+                            <select name="tipo_compra" class="mt-1 block w-full border-gray-300 rounded-md"><option>Padrão</option><option>Urgente</option></select>
+                        </div>
+                        <div>
+                            <label for="metodo_pagamento" class="block text-sm font-medium">Método de Pagamento</label>
+                            <select name="metodo_pagamento" class="mt-1 block w-full border-gray-300 rounded-md"><option>Boleto 30d</option><option>Cartão de Crédito</option></select>
+                        </div>
+                        <div>
+                            <label for="departamento_solicitante" class="block text-sm font-medium">Depto. Solicitante</label>
+                            <select name="departamento_solicitante" class="mt-1 block w-full border-gray-300 rounded-md"><option>Produção</option><option>Almoxarifado</option></select>
+                        </div>
+                    </fieldset>
+                    
+                    <fieldset class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <legend class="text-lg font-semibold text-gray-700 col-span-full border-b pb-2 mb-2">Informações do Fornecedor</legend>
+                        <div class="md:col-span-2">
+                             <label for="compra-select-fornecedor" class="block text-sm font-medium">Fornecedor *</label>
+                            <select name="fornecedor_id" id="compra-select-fornecedor" class="w-full mt-1" required></select>
+                        </div>
+                    </fieldset>
+
+                    <div>
+                        <legend class="text-lg font-semibold text-gray-700 col-span-full border-b pb-2 mb-4">Itens da Compra</legend>
+                        <div class="grid grid-cols-5 gap-4 mb-2">
+                            <div class="col-span-2"><label class="text-sm font-medium">Item</label></div>
+                            <div><label class="text-sm font-medium">Quantidade</label></div>
+                            <div><label class="text-sm font-medium">Preço Unitário</label></div>
+                        </div>
+                        <div id="compra-itens-container" class="space-y-2">
+                            </div>
+                        <button type="button" id="btn-adicionar-item-compra" class="mt-4 text-blue-600 font-semibold text-sm">+ Adicionar outro item</button>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-6 items-start">
+                        <div class="col-span-1">
+                            <label for="observacoes_compra" class="block text-sm font-medium">Observações</label>
+                            <textarea name="observacoes" id="observacoes_compra" rows="5" class="mt-1 block w-full border-gray-300 rounded-md"></textarea>
+                        </div>
+                        <div class="col-span-2 bg-gray-50 p-4 rounded-lg space-y-2">
+                            <div class="flex justify-between"><span class="text-gray-600">Subtotal:</span><span id="compra-subtotal">R$ 0,00</span></div>
+                            <div class="flex justify-between items-center"><label for="compra-frete" class="text-gray-600">Frete:</label><input type="number" id="compra-frete" value="0" class="w-24 text-right border-gray-300 rounded-md"></div>
+                            <div class="flex justify-between items-center"><label for="compra-impostos" class="text-gray-600">Impostos (%):</label><input type="number" id="compra-impostos" value="0" class="w-24 text-right border-gray-300 rounded-md"></div>
+                            <div class="flex justify-between border-t pt-2 mt-2"><span class="font-bold text-lg">TOTAL:</span><span id="compra-total" class="font-bold text-lg">R$ 0,00</span></div>
+                        </div>
+                    </div>
+
+                    <fieldset class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <legend class="text-lg font-semibold text-gray-700 col-span-full border-b pb-2 mb-2">Aprovação</legend>
+                        <div>
+                            <label for="solicitado_por" class="block text-sm font-medium">Solicitado por</label>
+                            <input type="text" name="solicitado_por" class="mt-1 block w-full border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                             <label for="status_aprovacao" class="block text-sm font-medium">Status da Aprovação</label>
+                             <select name="status_aprovacao" class="mt-1 block w-full border-gray-300 rounded-md"><option>Pendente</option><option>Aprovado</option><option>Rejeitado</option></select>
+                        </div>
+                    </fieldset>
+                </div>
+
+                <div class="flex justify-end gap-4 mt-6">
+                    <button type="button" id="btn-cancelar-compra" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 font-semibold">Cancelar</button>
+                    <button type="submit" class="bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-blue-700">Registrar Compra</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="lista-compras" class="page hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6"><i class="fa-solid fa-eye"></i> Ordens de Compra Registradas</h2>
+             <button id="btn-exportar-ordens" class="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 font-semibold flex items-center">
+                <i class="fa-solid fa-file-excel mr-2"></i>Exportar
+            </button>
+            <div class="overflow-x-auto bg-white rounded-lg shadow">
+                <table class="min-w-full bg-white">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">Nº Ordem</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">Fornecedor</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">Data Prevista</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">Valor Total</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-compras-table-body" class="divide-y divide-gray-200">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="modal-registrar-chegada" class="fixed inset-0 modal-overlay flex items-center justify-center hidden z-50">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+                <h3 class="text-lg font-semibold mb-4">Registrar Chegada da Ordem</h3>
+                <form id="form-registrar-chegada">
+                    <input type="hidden" id="ordem-id-chegada">
+                    <div>
+                        <label for="data-chegada-input" class="block text-sm font-medium text-gray-700">Data de Chegada Real *</label>
+                        <input type="date" id="data-chegada-input" required class="mt-1 block w-full border-gray-300 rounded-md">
+                    </div>
+                    <div class="flex justify-end gap-4 mt-6">
+                        <button type="button" class="bg-gray-200 px-4 py-2 rounded-lg close-modal-btn">Cancelar</button>
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>  
+
+        <div id="inventario" class="page hidden">
+            <div class="max-w-4xl mx-auto">
+                <div class="text-center bg-white p-6 rounded-lg shadow-md mb-6">
+                    <h1 class="text-3xl font-bold text-gray-800"><i class="fa-solid fa-sliders"></i> Ajuste Rápido de Estoque</h1>
+                    <p class="text-gray-500 mt-1">Localize por posição ou SKU e ajuste a quantidade</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">🔍 Localizar Item</h2>
+                    <form id="form-busca-item" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                        <div class="md:col-span-2">
+                            <label for="busca-posicao" class="block text-sm font-medium text-gray-700">Posição no Estoque</label>
+                            <input type="text" id="busca-posicao" placeholder="Ex: A-01-01" class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="busca-sku" class="block text-sm font-medium text-gray-700">SKU/Código</label>
+                            <input type="text" id="busca-sku" placeholder="Ex: 30000048" class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+                        </div>
+                        <div class="md:col-span-1 flex gap-2">
+                            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700">Buscar</button>
+                            <button type="button" id="btn-limpar-busca" class="w-full bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300">Limpar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="container-resultado" class="bg-white p-6 rounded-lg shadow-md mb-6 hidden">
+                    </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-700">📋 Histórico de Ajustes</h2>
+                        <button id="btn-exportar-historico" class="bg-green-600 text-white text-sm font-semibold py-2 px-4 rounded-md hover:bg-green-700">Exportar Histórico</button>
+                    </div>
+                    <div id="container-historico" class="overflow-x-auto">
+                        <p class="text-center text-gray-500 py-4">Nenhum ajuste realizado ainda.</p>
+                        </div>
+                </div>
+            </div>
+        </div>
+
+    <div id="modal-detalhes" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
+        </div>
+    </main>
+    
+    <div id="modal-registrar-chegada" class="fixed inset-0 modal-overlay flex items-center justify-center hidden z-50">
+        </div>  
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
