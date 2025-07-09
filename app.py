@@ -255,8 +255,9 @@ def index():
         if not Insumo.query.first():
             print(">>> Base de dados vazia. A iniciar o carregamento inicial de dados...")
             try:
-                # --- PASSO 1: Carregar o ficheiro de SKUs ---
-                df_sku = pd.read_excel('Dados limpos Insumos - SKU.xlsx')
+                # --- PASSO 1: Carregar o ficheiro de SKUs (CORRIGIDO PARA LER CSV) ---
+                # Usando os nomes exatos dos ficheiros que você enviou
+                df_sku = pd.read_csv('Controle-Insumos/Dados limpos Insumos - SKU.xlsx - SKU.csv')
                 mapa_insumos = {}
                 
                 print(">>> A processar o ficheiro de SKUs...")
@@ -264,7 +265,6 @@ def index():
                     descricao = str(row.get('Material', '')).strip()
                     if not descricao: continue
 
-                    # Tenta obter o SKU, se não existir, fica como None para ser gerado depois
                     sku_val = row.get('SKU')
                     sku = None
                     if pd.notna(sku_val) and str(sku_val).strip():
@@ -273,7 +273,6 @@ def index():
                         except (ValueError, TypeError):
                             sku = str(sku_val).strip()
 
-                    # Limpa e converte os valores numéricos
                     estoque_minimo = pd.to_numeric(row.get('estoque_minimo'), errors='coerce')
                     valor_unitario = pd.to_numeric(row.get('Valor Unit.'), errors='coerce')
 
@@ -286,13 +285,10 @@ def index():
                 # --- PASSO 2: Criar todos os Insumos na base de dados ---
                 print(f">>> {len(mapa_insumos)} materiais únicos encontrados. A criar registos de Insumos...")
                 for desc_mapa, dados in mapa_insumos.items():
-                    # *** AJUSTE PRINCIPAL AQUI ***
-                    # Se um insumo não tem SKU, gera um novo para ele
                     if not dados['sku']:
                         dados['sku'] = gerar_novo_sku()
                         print(f"      - Material '{desc_mapa}' sem SKU. Gerado novo SKU: {dados['sku']}")
 
-                    # Verifica se o insumo já não existe antes de o adicionar
                     insumo_existente = Insumo.query.filter_by(sku=dados['sku']).first()
                     if not insumo_existente:
                         novo_insumo = Insumo(
@@ -300,31 +296,28 @@ def index():
                             sku=dados['sku'],
                             valor_unitario=dados['valor_unitario'],
                             estoque_minimo=dados['estoque_minimo'],
-                            unidade_medida='UN' # Assumindo 'UN' como padrão
+                            unidade_medida='UN'
                         )
                         db.session.add(novo_insumo)
                 
-                # *** OTIMIZAÇÃO DE PERFORMANCE ***
-                # Faz o commit de todos os novos insumos de uma só vez
                 db.session.commit()
                 print(">>> Insumos criados com sucesso!")
 
-                # --- PASSO 3: Carregar o ficheiro de Estoque e popular as posições ---
+                # --- PASSO 3: Carregar o ficheiro de Estoque (CORRIGIDO PARA LER CSV) ---
                 print(">>> A processar o ficheiro de Estoque...")
-                df_estoque = pd.read_excel('Dados limpos Insumos - ESTOQUE.xlsx')
+                df_estoque = pd.read_csv('Controle-Insumos/Dados limpos Insumos - ESTOQUE.xlsx - ESTOQUE.csv')
                 posicoes_adicionadas = 0
                 for _, row in df_estoque.iterrows():
                     descricao_estoque = str(row.get('Material')).strip().upper()
                     if not descricao_estoque or descricao_estoque.lower() == 'nan': continue
                     
-                    # Procura o insumo no mapa que criámos
                     dados_mapa = mapa_insumos.get(descricao_estoque)
                     if dados_mapa and dados_mapa.get('sku'):
                         insumo_db = Insumo.query.filter_by(sku=dados_mapa['sku']).first()
                         if insumo_db:
                             quantidade = pd.to_numeric(row.get('Quantidade'), errors='coerce')
                             if pd.notna(quantidade) and quantidade > 0:
-                                posicao_limpa = re.sub(r'\s+', '', str(row.get('Posição', 'N/D')))
+                                posicao_limpa = re.sub(r'\\s+', '', str(row.get('Posição', 'N/D')))
                                 novo_estoque = Estoque(
                                     insumo_id=insumo_db.id,
                                     posicao=posicao_limpa,
@@ -335,21 +328,18 @@ def index():
                     else:
                         print(f"      - AVISO: Material '{row.get('Material')}' do ficheiro de estoque não encontrado no mapa de SKUs. Posição ignorada.")
 
-                # *** OTIMIZAÇÃO DE PERFORMANCE ***
-                # Faz o commit de todas as novas posições de estoque de uma só vez
                 db.session.commit()
                 print(f">>> {posicoes_adicionadas} posições de estoque adicionadas com sucesso!")
-                print("\n>>> CARGA DE DADOS INICIAL CONCLUÍDA! <<<\n")
+                print("\\n>>> CARGA DE DADOS INICIAL CONCLUÍDA! <<<\\n")
 
             except FileNotFoundError:
-                print("\nERRO CRÍTICO: Os ficheiros 'Dados limpos Insumos - SKU.xlsx' e/ou 'Dados limpos Insumos - ESTOQUE.xlsx' não foram encontrados no diretório do projeto.")
+                print("\\nERRO CRÍTICO: Os ficheiros CSV de dados não foram encontrados.")
             except Exception as e:
-                print(f"\n>>> ERRO CRÍTICO DURANTE O CARREGAMENTO INICIAL: {e}")
+                print(f"\\n>>> ERRO CRÍTICO DURANTE O CARREGAMENTO INICIAL: {e}")
                 traceback.print_exc()
                 db.session.rollback()
 
-     # --- Bloco 2: Popula os Setores (se necessário) ---
-        # *** ESTE BLOCO TINHA SIDO APAGADO E FOI REINSERIDO AQUI ***
+    # --- Bloco 2: Popula os Setores ---
     if not Setor.query.first():
             print(">>> Base de dados de Setores vazia. A popular com dados iniciais...")
             try:
@@ -359,11 +349,9 @@ def index():
                 db.session.commit()
                 print(">>> Setores cadastrados com sucesso!")
             except Exception as e:
-                 print(f"\n>>> ERRO AO CADASTRAR SETORES: {e}")
+                 print(f"\\n>>> ERRO AO CADASTRAR SETORES: {e}")
                  db.session.rollback()
     
-
-
     return render_template('index.html', username=session.get('username'))
 
 
