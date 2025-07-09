@@ -257,7 +257,7 @@ def index():
             try:
                 # --- PASSO 1: Carregar o ficheiro de SKUs (CORRIGIDO PARA LER CSV) ---
                 # Usando os nomes exatos dos ficheiros que você enviou
-                df_sku = pd.read_csv('Controle-Insumos/Dados limpos Insumos - SKU.xlsx - SKU.csv')
+                df_sku = pd.read_excel('Dados limpos Insumos - SKU.xlsx')
                 mapa_insumos = {}
                 
                 print(">>> A processar o ficheiro de SKUs...")
@@ -305,7 +305,7 @@ def index():
 
                 # --- PASSO 3: Carregar o ficheiro de Estoque (CORRIGIDO PARA LER CSV) ---
                 print(">>> A processar o ficheiro de Estoque...")
-                df_estoque = pd.read_csv('Controle-Insumos/Dados limpos Insumos - ESTOQUE.xlsx - ESTOQUE.csv')
+                df_estoque = pd.read_excel('Dados limpos Insumos - ESTOQUE.xlsx')
                 posicoes_adicionadas = 0
                 for _, row in df_estoque.iterrows():
                     descricao_estoque = str(row.get('Material')).strip().upper()
