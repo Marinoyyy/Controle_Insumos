@@ -244,6 +244,13 @@ class ItemDaOrdem(db.Model):
     ordem_de_compra = db.relationship('OrdemDeCompra', back_populates='itens')
     insumo = db.relationship('Insumo')
 
+
+# --- INICIALIZAÇÃO DA BASE DE DADOS ---
+# Este bloco irá garantir que a base de dados e as tabelas sejam criadas
+# sempre que a aplicação iniciar, seja com Gunicorn no OnRender ou localmente.
+with app.app_context():
+    db.create_all()
+    
 # --- ROTA PRINCIPAL E CARGA DE DADOS INICIAL ---
 @app.route('/')
 def index():
@@ -1846,6 +1853,4 @@ def exportar_ordens_de_compra():
 
 # --- EXECUÇÃO ---
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
