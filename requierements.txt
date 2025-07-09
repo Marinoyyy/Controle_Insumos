@@ -1,8 +1,5 @@
 Flask
-flask_sqlalchemy
-datetime
-SQLAlchemy
-jsonify
+Flask-SQLAlchemy
 pytz
 pandas
 openpyxl
